@@ -43,3 +43,5 @@ export const state: S = {
   tags: {},
   clipFolders: {}
 }
+
+export const stampNameTable = new Map<string, Stamp>()

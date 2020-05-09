@@ -1,5 +1,5 @@
 import { defineGetters } from 'direct-vuex'
-import { S } from './state'
+import { S, stampNameTable } from './state'
 import { entities } from './index'
 import { moduleGetterContext } from '@/store'
 import { User, Stamp, UserGroup } from '@traptitech/traq'
@@ -22,10 +22,8 @@ export const getters = defineGetters<S>()({
       )?.name
     }
   },
-  stampByName(state): (name: string) => Stamp | undefined {
-    return (name: string) => {
-      return Object.values(state.stamps).find(stamp => stamp.name === name)
-    }
+  stampByName(): (name: string) => Stamp | undefined {
+    return (name: string) => stampNameTable.get(name)
   },
   userByName(state): (name: string) => User | undefined {
     return (name: string) => {

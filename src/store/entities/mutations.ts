@@ -1,8 +1,8 @@
 import Vue from 'vue'
-import { Channel, MessageStamp } from '@traptitech/traq'
+import { Channel, MessageStamp, Stamp } from '@traptitech/traq'
 import { defineMutations } from 'direct-vuex'
-import { S } from './state'
-import { ChannelId } from '@/types/entity-ids'
+import { S, stampNameTable } from './state'
+import { ChannelId, StampId } from '@/types/entity-ids'
 import store from '..'
 import {
   MessageStampedEvent,
@@ -53,7 +53,12 @@ export const mutations = defineMutations<S>()({
   },
   setDMChannels: setMutation('dmChannels'),
   setUserGroups: setMutation('userGroups'),
-  setStamps: setMutation('stamps'),
+  setStamps(state, payload: Record<StampId, Stamp>) {
+    state.stamps = payload
+
+    stampNameTable.clear()
+    Object.values(payload).forEach(s => stampNameTable.set(s.name, s))
+  },
   setStampPalettes: setMutation('stampPalettes'),
   setWebhooks: setMutation('webhooks'),
   setFileMetaData: setMutation('fileMetaData'),
@@ -65,7 +70,10 @@ export const mutations = defineMutations<S>()({
   extendChannels: extendMutation('channels'),
   extendDMChannels: extendMutation('dmChannels'),
   extendUserGroups: extendMutation('userGroups'),
-  extendStamps: extendMutation('stamps'),
+  extendStamps(state, payload: Record<StampId, Stamp>) {
+    state.stamps = { ...state.stamps, ...payload }
+    Object.values(payload).forEach(s => stampNameTable.set(s.name, s))
+  },
   extendStampPalettes: extendMutation('stampPalettes'),
   extendWebhooks: extendMutation('webhooks'),
   extendFileMetaData: extendMutation('fileMetaData'),
@@ -77,7 +85,10 @@ export const mutations = defineMutations<S>()({
   addChannel: addMutation('channels'),
   addDMChannel: addMutation('dmChannels'),
   addUserGroup: addMutation('userGroups'),
-  addStamp: addMutation('stamps'),
+  addStamp(state, payload: { id: StampId; entity: Stamp }) {
+    Vue.set(state.stamps, payload.id, payload.entity)
+    stampNameTable.set(payload.entity.name, payload.entity)
+  },
   addStampPalette: addMutation('stampPalettes'),
   addWebhook: addMutation('webhooks'),
   addFileMetaData: addMutation('fileMetaData'),
@@ -89,7 +100,13 @@ export const mutations = defineMutations<S>()({
   deleteChannel: deleteMutation('channels'),
   deleteDMChannel: deleteMutation('dmChannels'),
   deleteUserGroup: deleteMutation('userGroups'),
-  deleteStamp: deleteMutation('stamps'),
+  deleteStamp(state, key: StampId) {
+    const stamp = state.stamps[key]
+    if (!stamp) return
+
+    stampNameTable.delete(stamp.name)
+    Vue.delete(state.stamps, key)
+  },
   deleteStampPalette: deleteMutation('stampPalettes'),
   deleteWebhook: deleteMutation('webhooks'),
   deleteFileMetaData: deleteMutation('fileMetaData'),
