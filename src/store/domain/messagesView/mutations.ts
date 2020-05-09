@@ -71,6 +71,12 @@ export const mutations = defineMutations<S>()({
   ) {
     Vue.set(state.renderedContentMap, messageId, renderedContent)
   },
+  extendRenderedContent(state, renderedContents: Record<MessageId, string>) {
+    state.renderedContentMap = {
+      ...state.renderedContentMap,
+      ...renderedContents
+    }
+  },
   setRenderedContent(state, renderedContentMap: Record<string, string>) {
     state.renderedContentMap = renderedContentMap
   },
@@ -79,6 +85,12 @@ export const mutations = defineMutations<S>()({
     payload: { messageId: MessageId; embeddings: Embedding[] }
   ) {
     Vue.set(state.embeddingsMap, payload.messageId, payload.embeddings)
+  },
+  extendEmbedding(state, embeddings: Record<MessageId, Embedding[]>) {
+    state.embeddingsMap = {
+      ...state.embeddingsMap,
+      ...embeddings
+    }
   },
   setCurrentViewer(state, viewers: ChannelViewer[]) {
     state.currentViewers = viewers

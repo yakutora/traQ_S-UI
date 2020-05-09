@@ -6,12 +6,36 @@ import { ChannelViewState, Message } from '@traptitech/traq'
 import { render } from '@/lib/markdown'
 import apis from '@/lib/apis'
 import { changeViewState } from '@/lib/websocket'
-import { embeddingExtractor } from '@/lib/embeddingExtractor'
+import { embeddingExtractor, Embedding } from '@/lib/embeddingExtractor'
 import { ActionContext } from 'vuex'
 
 export const messagesViewActionContext = (
   context: ActionContext<unknown, unknown>
 ) => moduleActionContext(context, messagesView)
+
+const createEmbeddingFetcher = (context: ActionContext<unknown, unknown>) => {
+  const { rootDispatch, commit } = messagesViewActionContext(context)
+  return async (e: Embedding) => {
+    try {
+      if (e.type === 'file') {
+        await rootDispatch.entities.fetchFileMetaByFileId(e.id)
+      }
+      if (e.type === 'message') {
+        const message = await rootDispatch.entities.fetchMessage(e.id)
+
+        // テキスト部分のみレンダリング
+        const extracted = embeddingExtractor(message.content)
+        const renderedContent = render(extracted.text)
+        commit.addRenderedContent({
+          messageId: message.id,
+          renderedContent
+        })
+      }
+    } catch (e) {
+      // TODO: エラー処理、無効な埋め込みの扱いを考える必要あり
+    }
+  }
+}
 
 export const actions = defineActions({
   resetViewState(context) {
@@ -96,36 +120,14 @@ export const actions = defineActions({
     await dispatch.renderMessageContent(messageId)
     commit.setMessageIds([...state.messageIds, messageId])
   },
-  async renderMessageContent(context, messageId: string) {
-    const { commit, rootState, rootDispatch } = messagesViewActionContext(
-      context
-    )
-    const content = rootState.entities.messages[messageId]?.content ?? ''
+  async renderMessageContent(context, messageId: MessageId) {
+    const { commit, rootState } = messagesViewActionContext(context)
 
+    const content = rootState.entities.messages[messageId]?.content ?? ''
     const extracted = embeddingExtractor(content)
 
-    await Promise.all(
-      extracted.embeddings.map(async e => {
-        try {
-          if (e.type === 'file') {
-            await rootDispatch.entities.fetchFileMetaByFileId(e.id)
-          }
-          if (e.type === 'message') {
-            const message = await rootDispatch.entities.fetchMessage(e.id)
-
-            // テキスト部分のみレンダリング
-            const extracted = embeddingExtractor(message.content)
-            const renderedContent = render(extracted.text)
-            commit.addRenderedContent({
-              messageId: message.id,
-              renderedContent
-            })
-          }
-        } catch (e) {
-          // TODO: エラー処理、無効な埋め込みの扱いを考える必要あり
-        }
-      })
-    )
+    const embeddingFetcher = createEmbeddingFetcher(context)
+    await Promise.all(extracted.embeddings.map(embeddingFetcher))
 
     const renderedContent = render(extracted.text)
     commit.addRenderedContent({ messageId, renderedContent })
@@ -133,6 +135,32 @@ export const actions = defineActions({
       messageId,
       embeddings: extracted.embeddings
     })
+  },
+  async renderMultipleMessageContent(context, messageId: MessageId[]) {
+    const { commit, rootState } = messagesViewActionContext(context)
+    const extracteds = messageId.map(mId =>
+      Object.assign(
+        embeddingExtractor(rootState.entities.messages[mId]?.content ?? ''),
+        { messageId: mId }
+      )
+    )
+
+    const embeddingFetcher = createEmbeddingFetcher(context)
+    await Promise.all(
+      extracteds.flatMap(extracted =>
+        extracted.embeddings.map(embeddingFetcher)
+      )
+    )
+
+    const renderedContents = Object.fromEntries(
+      extracteds.map(e => [e.messageId, render(e.text)])
+    )
+    const embeddings = Object.fromEntries(
+      extracteds.map(e => [e.messageId, e.embeddings])
+    )
+
+    commit.extendRenderedContent(renderedContents)
+    commit.extendEmbedding(embeddings)
   },
   async addAndRenderMessage(context, payload: { message: Message }) {
     const { commit, dispatch } = messagesViewActionContext(context)

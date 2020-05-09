@@ -28,10 +28,8 @@ const useMessageFetcher = (
   const lastLoadingDirection = ref('latest' as LoadingDirection)
 
   const renderMessageFromIds = async (messageIdsToRender: ChannelId[]) => {
-    await Promise.all(
-      messageIdsToRender.map(messageId =>
-        store.dispatch.domain.messagesView.renderMessageContent(messageId)
-      )
+    await store.dispatch.domain.messagesView.renderMultipleMessageContent(
+      messageIdsToRender
     )
   }
 
