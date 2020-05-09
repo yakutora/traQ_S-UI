@@ -8,7 +8,6 @@
     <stamp
       v-if="stampSet.type === 'palette'"
       :stamp-id="pickThumbnail(stampSet.id)"
-      :size="24"
       :class="$style.paletteStamp"
     />
     <icon
@@ -91,6 +90,8 @@ export default defineComponent({
   left: -4px;
 }
 .paletteStamp {
+  width: 24px;
+  height: 24px;
   .container:not([aria-selected='true']) & {
     filter: grayscale(1);
   }

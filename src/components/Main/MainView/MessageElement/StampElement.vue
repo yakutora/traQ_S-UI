@@ -5,7 +5,7 @@
     :data-include-me="state.includeMe"
     @click="onClick"
   >
-    <stamp :stamp-id="stampId" :size="20" without-title />
+    <stamp :class="$style.stamp" :stamp-id="stampId" without-title />
     <spin-number :value="state.count" :class="$style.count" />
   </div>
 </template>
@@ -108,6 +108,11 @@ export default defineComponent({
   user-select: none;
   overflow: hidden;
   contain: content;
+}
+
+.stamp {
+  width: 20px;
+  height: 20px;
 }
 
 .count {

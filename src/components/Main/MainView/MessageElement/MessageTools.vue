@@ -6,7 +6,6 @@
         :key="stamp"
         :stamp-id="stamp"
         @click.native="addStamp(stamp)"
-        :size="28"
         :class="$style.stampListItem"
       />
       <span :class="$style.line"></span>
@@ -141,6 +140,8 @@ export default defineComponent({
 }
 
 .stampListItem {
+  width: 28px;
+  height: 28px;
   padding: 4px;
   cursor: pointer;
   user-select: none;
